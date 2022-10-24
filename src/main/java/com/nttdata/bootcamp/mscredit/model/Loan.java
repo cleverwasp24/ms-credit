@@ -1,7 +1,6 @@
 package com.nttdata.bootcamp.mscredit.model;
 
 import com.mongodb.lang.NonNull;
-import com.mongodb.lang.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,14 +18,18 @@ import java.util.List;
 public class Loan {
 
     @Id
-    @Indexed(unique = true)
     private Integer id;
+    @NonNull
+    @Indexed(unique = true)
+    private String loanCode;
     @NonNull
     private Integer clientId;
     @NonNull
-    private Integer loanType; // 0 - CREDITO PERSONAL, 1 - CREDITO EMPRESARIAL
+    private Integer loanType;
     @NonNull
-    private Double debtAmount;
+    private Double totalDebt;
+    @NonNull
+    private Double pendingDebt;
     @NonNull
     private Integer installments;
     @NonNull

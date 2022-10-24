@@ -1,9 +1,13 @@
 package com.nttdata.bootcamp.mscredit.service.impl;
 
+import com.nttdata.bootcamp.mscredit.dto.CreditCardDTO;
 import com.nttdata.bootcamp.mscredit.dto.TransactionDTO;
 import com.nttdata.bootcamp.mscredit.infrastructure.TransactionRepository;
 import com.nttdata.bootcamp.mscredit.mapper.TransactionDTOMapper;
+import com.nttdata.bootcamp.mscredit.model.LoanPayment;
 import com.nttdata.bootcamp.mscredit.model.Transaction;
+import com.nttdata.bootcamp.mscredit.model.enums.TransactionTypeEnum;
+import com.nttdata.bootcamp.mscredit.service.CreditCardService;
 import com.nttdata.bootcamp.mscredit.service.TransactionService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Autowired
     private TransactionRepository transactionRepository;
+
+    @Autowired
+    private CreditCardService creditCardService;
 
     private TransactionDTOMapper transactionDTOMapper = new TransactionDTOMapper();
 
@@ -42,13 +49,9 @@ public class TransactionServiceImpl implements TransactionService {
     public Mono<Transaction> update(Integer id, Transaction transaction) {
         log.info("Updating transaction with id: " + id + " with : " + transaction.toString());
         return transactionRepository.findById(id)
-                .flatMap(savedTransaction -> {
-                    savedTransaction.setCreditCardId(transaction.getCreditCardId());
-                    savedTransaction.setTransactionType(transaction.getTransactionType());
-                    savedTransaction.setDescription(transaction.getDescription());
-                    savedTransaction.setAmount(transaction.getAmount());
-                    savedTransaction.setTransactionDate(transaction.getTransactionDate());
-                    return transactionRepository.save(savedTransaction);
+                .flatMap(t -> {
+                    transaction.setId(id);
+                    return transactionRepository.save(transaction);
                 });
     }
 
@@ -59,11 +62,55 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Mono<TransactionDTO> createTransaction(TransactionDTO transactionDTO) {
-        log.info("Creating transaction: " + transactionDTO.toString());
-        Transaction transaction = transactionDTOMapper.convertToEntity(transactionDTO);
-        return transactionRepository.save(transaction)
-                .map(c -> transactionDTOMapper.convertToDto(c));
+    public Mono<String> purchase(TransactionDTO transactionDTO) {
+        log.info("Credit card purchase: " + transactionDTO.toString());
+        Transaction transaction = transactionDTOMapper.convertToEntity(transactionDTO, TransactionTypeEnum.PURCHASE);
+        return checkFields(transactionDTO)
+                .switchIfEmpty(creditCardService.findById(transaction.getCreditCardId()).flatMap(cc -> {
+                    cc.setAvailableCredit(cc.getAvailableCredit() - transaction.getAmount());
+                    if (cc.getAvailableCredit() < 0) {
+                        return Mono.error(new IllegalArgumentException("Insufficient credit line to purchase"));
+                    }
+                    transaction.setNewAvailableCredit(cc.getAvailableCredit());
+                    return creditCardService.update(cc.getId(), cc)
+                            .then(transactionRepository.save(transaction))
+                            .then(Mono.just("Purchase done, new available credit: " + cc.getAvailableCredit()));
+                }).switchIfEmpty(Mono.error(new IllegalArgumentException("Credit card not found"))));
+    }
+
+    @Override
+    public Mono<String> payDebt(TransactionDTO transactionDTO) {
+        log.info("Credit card pay debt: " + transactionDTO.toString());
+        Transaction transaction = transactionDTOMapper.convertToEntity(transactionDTO, TransactionTypeEnum.PAY_DEBT);
+        return checkFields(transactionDTO)
+                .switchIfEmpty(creditCardService.findById(transaction.getCreditCardId()).flatMap(cc -> {
+                    cc.setAvailableCredit(cc.getAvailableCredit() + transaction.getAmount());
+                    if (cc.getAvailableCredit() > cc.getCreditLine()) {
+                        return Mono.error(new IllegalArgumentException("Debt pay exceeds total credit line"));
+                    }
+                    transaction.setNewAvailableCredit(cc.getAvailableCredit());
+                    return creditCardService.update(cc.getId(), cc)
+                            .then(transactionRepository.save(transaction))
+                            .then(Mono.just("Debt pay done, new available credit: " + cc.getAvailableCredit()));
+                }).switchIfEmpty(Mono.error(new IllegalArgumentException("Credit card not found"))));
+    }
+
+    @Override
+    public Flux<Transaction> findAllByCreditCardId(Integer id) {
+        log.info("Listing all transactions by credit card id");
+        return transactionRepository.findAllByCreditCardId(id);
+    }
+
+    @Override
+    public Mono<String> checkFields(TransactionDTO transaction) {
+        if (transaction.getDescription() == null || transaction.getDescription().trim().equals("")) {
+            return Mono.error(new IllegalArgumentException("Credit card transaction description cannot be empty"));
+        }
+        if (transaction.getAmount() == null || transaction.getAmount() <= 0) {
+            return Mono.error(new IllegalArgumentException("Credit card transaction amount must be greater than 0"));
+        }
+        return transactionRepository.findById(transaction.getId())
+                .flatMap(cc -> Mono.error(new IllegalArgumentException("Credit card transaction id already exists")));
     }
 
 }

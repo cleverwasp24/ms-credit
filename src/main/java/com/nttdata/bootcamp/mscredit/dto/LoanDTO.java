@@ -6,8 +6,9 @@ import lombok.Data;
 public class LoanDTO {
 
     private Integer id;
+    private String loanCode;
     private Integer clientId;
-    private String debtAmount;
+    private Double totalDebt;
     private Integer installments;
 
 }

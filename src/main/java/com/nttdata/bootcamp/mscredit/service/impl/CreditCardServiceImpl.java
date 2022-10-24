@@ -4,6 +4,7 @@ import com.nttdata.bootcamp.mscredit.dto.CreditCardDTO;
 import com.nttdata.bootcamp.mscredit.infrastructure.CreditCardRepository;
 import com.nttdata.bootcamp.mscredit.mapper.CreditCardDTOMapper;
 import com.nttdata.bootcamp.mscredit.model.CreditCard;
+import com.nttdata.bootcamp.mscredit.model.enums.CreditCardTypeEnum;
 import com.nttdata.bootcamp.mscredit.service.CreditCardService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,9 @@ public class CreditCardServiceImpl implements CreditCardService {
 
     @Autowired
     private CreditCardRepository creditCardRepository;
+
+    @Autowired
+    private ClientServiceImpl clientService;
 
     private CreditCardDTOMapper creditCardDTOMapper = new CreditCardDTOMapper();
 
@@ -42,12 +46,9 @@ public class CreditCardServiceImpl implements CreditCardService {
     public Mono<CreditCard> update(Integer id, CreditCard creditCard) {
         log.info("Updating credit card with id: " + id + " with : " + creditCard.toString());
         return creditCardRepository.findById(id)
-                .flatMap(savedCreditCard -> {
-                    savedCreditCard.setClientId(creditCard.getClientId());
-                    savedCreditCard.setCreditCardNumber(creditCard.getCreditCardNumber());
-                    savedCreditCard.setCreditAmount(creditCard.getCreditAmount());
-                    savedCreditCard.setCreationDate(creditCard.getCreationDate());
-                    return creditCardRepository.save(savedCreditCard);
+                .flatMap(c -> {
+                    creditCard.setId(id);
+                    return creditCardRepository.save(creditCard);
                 });
     }
 
@@ -58,11 +59,36 @@ public class CreditCardServiceImpl implements CreditCardService {
     }
 
     @Override
-    public Mono<CreditCardDTO> createCreditCard(CreditCardDTO creditCardDTO) {
+    public Mono<String> createCreditCard(CreditCardDTO creditCardDTO) {
         log.info("Creating credit card: " + creditCardDTO.toString());
-        CreditCard creditCard = creditCardDTOMapper.convertToEntity(creditCardDTO);
-        return creditCardRepository.save(creditCard)
-                .map(c -> creditCardDTOMapper.convertToDto(c));
+
+        return checkFields(creditCardDTO)
+                .switchIfEmpty(clientService.findById(creditCardDTO.getClientId())
+                        .flatMap(c -> {
+                            CreditCard creditCard = creditCardDTOMapper.convertToEntity(creditCardDTO, CreditCardTypeEnum.valueOf(c.getClientType()));
+                            return creditCardRepository.save(creditCard)
+                                    .then(Mono.just("Credit card created! "
+                                            + creditCardDTOMapper.convertToDto(creditCard)));
+                        })
+                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Client not found"))));
+    }
+
+    @Override
+    public Flux<CreditCard> findAllByClientId(Integer id) {
+        log.info("Listing all credit cards by client id");
+        return creditCardRepository.findAllByClientId(id);
+    }
+
+    @Override
+    public Mono<String> checkFields(CreditCardDTO creditCard) {
+        if (creditCard.getCreditCardNumber() == null || creditCard.getCreditCardNumber().trim().equals("")) {
+            return Mono.error(new IllegalArgumentException("Credit card number cannot be empty"));
+        }
+        if (creditCard.getCreditLine() == null || creditCard.getCreditLine() <= 0) {
+            return Mono.error(new IllegalArgumentException("Credit card credit line must be greater than 0"));
+        }
+        return creditCardRepository.findById(creditCard.getId())
+                .flatMap(cc -> Mono.error(new IllegalArgumentException("Credit card id already exists")));
     }
 
 }

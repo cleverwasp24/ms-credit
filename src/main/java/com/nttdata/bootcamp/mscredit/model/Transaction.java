@@ -17,16 +17,17 @@ import java.time.LocalDateTime;
 public class Transaction {
 
     @Id
-    @Indexed(unique = true)
     private Integer id;
     @NonNull
     private Integer creditCardId;
     @NonNull
-    private Integer transactionType;// 1 - CONSUMO DE TARJETA / 2 - PAGO DE TARJETA
+    private Integer transactionType;
     @NonNull
     private String description;
     @NonNull
     private Double amount;
+    @NonNull
+    private Double newAvailableCredit;
     @NonNull
     private LocalDateTime transactionDate;
 

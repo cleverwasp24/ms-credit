@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 public class LoanPayment {
 
     @Id
-    @Indexed(unique = true)
     private Integer id;
     @NonNull
     private Integer loanId;
@@ -25,6 +24,8 @@ public class LoanPayment {
     private String description;
     @NonNull
     private Double amount;
+    @NonNull
+    private Double newPendingDebt;
     @NonNull
     private LocalDateTime transactionDate;
 

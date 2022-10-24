@@ -6,6 +6,7 @@ import com.nttdata.bootcamp.mscredit.service.impl.CreditCardServiceImpl;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -26,22 +27,28 @@ public class CreditCardController {
 
     @PostMapping(value = "/createCreditCard")
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<CreditCardDTO> createSavingsCreditCard(@RequestBody CreditCardDTO creditCardDTO) {
+    public Mono<String> createCreditCard(@RequestBody CreditCardDTO creditCardDTO) {
         return creditCardService.createCreditCard(creditCardDTO);
     }
 
     @GetMapping(value = "/find/{id}")
     @ResponseBody
-    public Mono<CreditCard> findCreditCardById(@PathVariable Integer id) {
+    public Mono<ResponseEntity<CreditCard>> findCreditCardById(@PathVariable Integer id) {
         return creditCardService.findById(id)
-                .defaultIfEmpty(null);
+                .map(creditCard -> ResponseEntity.ok().body(creditCard))
+                .onErrorResume(e -> {
+                    log.info("Credit Card not found " + id, e);
+                    return Mono.just(ResponseEntity.badRequest().build());
+                })
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @PutMapping(value = "/update/{id}")
     @ResponseBody
-    public Mono<CreditCard> updateCreditCard(@PathVariable Integer id, @RequestBody CreditCard creditCard) {
+    public Mono<ResponseEntity<CreditCard>> updateCreditCard(@PathVariable Integer id, @RequestBody CreditCard creditCard) {
         return creditCardService.update(id, creditCard)
-                .defaultIfEmpty(null);
+                .map(a -> new ResponseEntity<>(a, HttpStatus.ACCEPTED))
+                .defaultIfEmpty(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping(value = "/delete/{id}")
@@ -50,5 +57,12 @@ public class CreditCardController {
         return creditCardService.delete(id)
                 .defaultIfEmpty(null);
     }
+
+    @GetMapping(value = "/findAllByClientId/{id}")
+    @ResponseBody
+    public Flux<CreditCard> findAllByClientId(@PathVariable Integer id) {
+        return creditCardService.findAllByClientId(id);
+    }
+
 
 }

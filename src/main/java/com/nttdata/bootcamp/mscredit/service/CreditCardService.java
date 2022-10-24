@@ -17,6 +17,9 @@ public interface CreditCardService {
 
     Mono<Void> delete(Integer id);
 
-    Mono<CreditCardDTO> createCreditCard(CreditCardDTO creditCardDTO);
+    Mono<String> createCreditCard(CreditCardDTO creditCardDTO);
 
+    Flux<CreditCard> findAllByClientId(Integer id);
+
+    Mono<String> checkFields(CreditCardDTO creditCard);
 }

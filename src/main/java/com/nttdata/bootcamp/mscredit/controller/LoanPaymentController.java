@@ -3,10 +3,12 @@ package com.nttdata.bootcamp.mscredit.controller;
 import com.nttdata.bootcamp.mscredit.dto.LoanPaymentDTO;
 import com.nttdata.bootcamp.mscredit.mapper.LoanPaymentDTOMapper;
 import com.nttdata.bootcamp.mscredit.model.LoanPayment;
+import com.nttdata.bootcamp.mscredit.model.Transaction;
 import com.nttdata.bootcamp.mscredit.service.impl.LoanPaymentServiceImpl;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -27,22 +29,28 @@ public class LoanPaymentController {
 
     @PostMapping(value = "/createLoanPayment")
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<LoanPaymentDTO> createLoanPayment(@RequestBody LoanPaymentDTO loanPaymentDTO) {
+    public Mono<String> createLoanPayment(@RequestBody LoanPaymentDTO loanPaymentDTO) {
         return loanPaymentService.createLoanPayment(loanPaymentDTO);
     }
 
     @GetMapping(value = "/find/{id}")
     @ResponseBody
-    public Mono<LoanPayment> findLoanPaymentById(@PathVariable Integer id) {
+    public Mono<ResponseEntity<LoanPayment>> findLoanPaymentById(@PathVariable Integer id) {
         return loanPaymentService.findById(id)
-                .defaultIfEmpty(null);
+                .map(creditCard -> ResponseEntity.ok().body(creditCard))
+                .onErrorResume(e -> {
+                    log.info("Loan Payment not found " + id, e);
+                    return Mono.just(ResponseEntity.badRequest().build());
+                })
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @PutMapping(value = "/update/{id}")
     @ResponseBody
-    public Mono<LoanPayment> updateLoanPayment(@PathVariable Integer id, @RequestBody LoanPayment loanPayment) {
+    public Mono<ResponseEntity<LoanPayment>> updateLoanPayment(@PathVariable Integer id, @RequestBody LoanPayment loanPayment) {
         return loanPaymentService.update(id, loanPayment)
-                .defaultIfEmpty(null);
+                .map(a -> new ResponseEntity<>(a, HttpStatus.ACCEPTED))
+                .defaultIfEmpty(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping(value = "/delete/{id}")
@@ -50,5 +58,11 @@ public class LoanPaymentController {
     public Mono<Void> deleteByIdLoanPayment(@PathVariable Integer id) {
         return loanPaymentService.delete(id)
                 .defaultIfEmpty(null);
+    }
+
+    @GetMapping(value = "/findAllByLoanId/{id}")
+    @ResponseBody
+    public Flux<LoanPayment> findAllByLoanId(@PathVariable Integer id) {
+        return loanPaymentService.findAllByLoanId(id);
     }
 }

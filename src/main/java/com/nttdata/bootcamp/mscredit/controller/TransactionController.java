@@ -2,11 +2,13 @@ package com.nttdata.bootcamp.mscredit.controller;
 
 import com.nttdata.bootcamp.mscredit.dto.TransactionDTO;
 import com.nttdata.bootcamp.mscredit.mapper.TransactionDTOMapper;
+import com.nttdata.bootcamp.mscredit.model.CreditCard;
 import com.nttdata.bootcamp.mscredit.model.Transaction;
 import com.nttdata.bootcamp.mscredit.service.impl.TransactionServiceImpl;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,24 +27,36 @@ public class TransactionController {
         return transactionService.findAll();
     }
 
-    @PostMapping(value = "/createTransaction")
+    @PostMapping(value = "/purchase")
     @ResponseStatus(HttpStatus.CREATED)
-    public Mono<TransactionDTO> createTransaction(@RequestBody TransactionDTO transactionDTO) {
-        return transactionService.createTransaction(transactionDTO);
+    public Mono<String> purchase(@RequestBody TransactionDTO transactionDTO) {
+        return transactionService.purchase(transactionDTO);
+    }
+
+    @PostMapping(value = "/payDebt")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<String> payDebt(@RequestBody TransactionDTO transactionDTO) {
+        return transactionService.payDebt(transactionDTO);
     }
 
     @GetMapping(value = "/find/{id}")
     @ResponseBody
-    public Mono<Transaction> findTransactionById(@PathVariable Integer id) {
+    public Mono<ResponseEntity<Transaction>> findTransactionById(@PathVariable Integer id) {
         return transactionService.findById(id)
-                .defaultIfEmpty(null);
+                .map(creditCard -> ResponseEntity.ok().body(creditCard))
+                .onErrorResume(e -> {
+                    log.info("Transaction not found " + id, e);
+                    return Mono.just(ResponseEntity.badRequest().build());
+                })
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @PutMapping(value = "/update/{id}")
     @ResponseBody
-    public Mono<Transaction> updateTransaction(@PathVariable Integer id, @RequestBody Transaction transaction) {
+    public Mono<ResponseEntity<Transaction>> updateTransaction(@PathVariable Integer id, @RequestBody Transaction transaction) {
         return transactionService.update(id, transaction)
-                .defaultIfEmpty(null);
+                .map(a -> new ResponseEntity<>(a, HttpStatus.ACCEPTED))
+                .defaultIfEmpty(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping(value = "/delete/{id}")
@@ -50,5 +64,11 @@ public class TransactionController {
     public Mono<Void> deleteByIdTransaction(@PathVariable Integer id) {
         return transactionService.delete(id)
                 .defaultIfEmpty(null);
+    }
+
+    @GetMapping(value = "/findAllByCreditCardId/{id}")
+    @ResponseBody
+    public Flux<Transaction> findAllByCreditCardId(@PathVariable Integer id) {
+        return transactionService.findAllByCreditCardId(id);
     }
 }

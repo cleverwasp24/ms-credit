@@ -1,6 +1,8 @@
 package com.nttdata.bootcamp.mscredit.service;
 
 import com.nttdata.bootcamp.mscredit.dto.LoanPaymentDTO;
+import com.nttdata.bootcamp.mscredit.dto.TransactionDTO;
+import com.nttdata.bootcamp.mscredit.model.CreditCard;
 import com.nttdata.bootcamp.mscredit.model.LoanPayment;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -17,6 +19,10 @@ public interface LoanPaymentService {
 
     Mono<Void> delete(Integer id);
 
-    Mono<LoanPaymentDTO> createLoanPayment(LoanPaymentDTO loanPaymentDTO);
+    Mono<String> createLoanPayment(LoanPaymentDTO loanPaymentDTO);
+
+    Flux<LoanPayment> findAllByLoanId(Integer id);
+
+    Mono<String> checkFields(LoanPaymentDTO loanPayment);
 
 }

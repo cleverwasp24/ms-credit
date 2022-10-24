@@ -20,6 +20,7 @@ public class LoanDTOMapper {
     public Loan convertToEntity(LoanDTO loanDTO, LoanTypeEnum type) {
         Loan creditCard = modelMapper.map(loanDTO, Loan.class);
         creditCard.setLoanType(type.ordinal());
+        creditCard.setPendingDebt(loanDTO.getTotalDebt());
         creditCard.setLoanDate(LocalDateTime.now());
         return creditCard;
     }

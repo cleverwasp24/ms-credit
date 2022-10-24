@@ -19,15 +19,18 @@ import java.util.List;
 public class CreditCard {
 
     @Id
-    @Indexed(unique = true)
     private Integer id;
     @NonNull
     private Integer clientId;
     @NonNull
+    private Integer creditCardType;
+    @NonNull
     @Indexed(unique = true)
     private String creditCardNumber;
     @NonNull
-    private Double creditAmount;
+    private Double creditLine;
+    @NonNull
+    private Double availableCredit;
     @NonNull
     private LocalDateTime creationDate;
 

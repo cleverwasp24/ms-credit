@@ -2,11 +2,15 @@ package com.nttdata.bootcamp.mscredit.service.impl;
 
 import com.nttdata.bootcamp.mscredit.dto.LoanPaymentDTO;
 import com.nttdata.bootcamp.mscredit.dto.LoanPaymentDTO;
+import com.nttdata.bootcamp.mscredit.dto.TransactionDTO;
 import com.nttdata.bootcamp.mscredit.infrastructure.LoanPaymentRepository;
 import com.nttdata.bootcamp.mscredit.mapper.LoanPaymentDTOMapper;
+import com.nttdata.bootcamp.mscredit.model.CreditCard;
 import com.nttdata.bootcamp.mscredit.model.LoanPayment;
 import com.nttdata.bootcamp.mscredit.model.LoanPayment;
+import com.nttdata.bootcamp.mscredit.service.CreditCardService;
 import com.nttdata.bootcamp.mscredit.service.LoanPaymentService;
+import com.nttdata.bootcamp.mscredit.service.LoanService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,6 +23,9 @@ public class LoanPaymentServiceImpl implements LoanPaymentService {
 
     @Autowired
     private LoanPaymentRepository loanPaymentRepository;
+
+    @Autowired
+    private LoanService loanService;
 
     private LoanPaymentDTOMapper loanPaymentDTOMapper = new LoanPaymentDTOMapper();
 
@@ -44,12 +51,9 @@ public class LoanPaymentServiceImpl implements LoanPaymentService {
     public Mono<LoanPayment> update(Integer id, LoanPayment loanPayment) {
         log.info("Updating loan payment with id: " + id + " with : " + loanPayment.toString());
         return loanPaymentRepository.findById(id)
-                .flatMap(savedLoanPayment -> {
-                    savedLoanPayment.setLoanId(loanPayment.getLoanId());
-                    savedLoanPayment.setDescription(loanPayment.getDescription());
-                    savedLoanPayment.setAmount(loanPayment.getAmount());
-                    savedLoanPayment.setTransactionDate(loanPayment.getTransactionDate());
-                    return loanPaymentRepository.save(savedLoanPayment);
+                .flatMap(l -> {
+                    loanPayment.setId(id);
+                    return loanPaymentRepository.save(loanPayment);
                 });
     }
 
@@ -60,10 +64,37 @@ public class LoanPaymentServiceImpl implements LoanPaymentService {
     }
 
     @Override
-    public Mono<LoanPaymentDTO> createLoanPayment(LoanPaymentDTO loanPaymentDTO) {
+    public Mono<String> createLoanPayment(LoanPaymentDTO loanPaymentDTO) {
         log.info("Creating loan payment: " + loanPaymentDTO.toString());
         LoanPayment loanPayment = loanPaymentDTOMapper.convertToEntity(loanPaymentDTO);
-        return loanPaymentRepository.save(loanPayment)
-                .map(c -> loanPaymentDTOMapper.convertToDto(c));
+        return checkFields(loanPaymentDTO)
+                .switchIfEmpty(loanService.findById(loanPayment.getLoanId()).flatMap(cc -> {
+                    cc.setPendingDebt(cc.getPendingDebt() - loanPayment.getAmount());
+                    if (cc.getPendingDebt() < 0) {
+                        return Mono.error(new IllegalArgumentException("Loan payment exceeds pending debt"));
+                    }
+                    loanPayment.setNewPendingDebt(cc.getPendingDebt());
+                    return loanService.update(cc.getId(), cc)
+                            .then(loanPaymentRepository.save(loanPayment))
+                            .then(Mono.just("Loan payment done, new pending debt: " + cc.getPendingDebt()));
+                }).switchIfEmpty(Mono.error(new IllegalArgumentException("Loan not found"))));
+    }
+
+    @Override
+    public Flux<LoanPayment> findAllByLoanId(Integer id) {
+        log.info("Listing all loan payments by loan id");
+        return loanPaymentRepository.findAllByLoanId(id);
+    }
+
+    @Override
+    public Mono<String> checkFields(LoanPaymentDTO loanPayment) {
+        if (loanPayment.getDescription() == null || loanPayment.getDescription().trim().equals("")) {
+            return Mono.error(new IllegalArgumentException("Loan payment description cannot be empty"));
+        }
+        if (loanPayment.getAmount() == null || loanPayment.getAmount() <= 0) {
+            return Mono.error(new IllegalArgumentException("Loan payment amount must be greater than 0"));
+        }
+        return loanPaymentRepository.findById(loanPayment.getId())
+                .flatMap(cc -> Mono.error(new IllegalArgumentException("Loan payment id already exists")));
     }
 }

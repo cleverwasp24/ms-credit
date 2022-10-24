@@ -17,8 +17,12 @@ public interface LoanService {
 
     Mono<Void> delete(Integer id);
 
-    Mono<LoanDTO> createPersonalLoan(LoanDTO loanDTO);
+    Mono<String> createPersonalLoan(LoanDTO loanDTO);
 
-    Mono<LoanDTO> createBusinessLoan(LoanDTO loanDTO);
+    Mono<String> createBusinessLoan(LoanDTO loanDTO);
+
+    Flux<Loan> findAllByClientId(Integer id);
+
+    Mono<String> checkFields(LoanDTO loan);
 
 }

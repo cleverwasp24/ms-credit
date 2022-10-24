@@ -1,0 +1,28 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+spring:
+  data:
+    mongodb:
+      url: '27017'
+      auto-index-creation: 'true'
+      database: mscredit
+      host: localhost
+  config:
+    import: optional:configserver:http://localhost:8090
+  application:
+    name: ms-credit
+logging:
+  level:
+    com:
+      nttdata:
+        bootcamp:
+          mscredit: info
+server:
+  port: '8083'
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8089/eureka/

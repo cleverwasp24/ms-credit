@@ -8,6 +8,6 @@ public class CreditCardDTO {
     private Integer id;
     private Integer clientId;
     private String creditCardNumber;
-    private Double creditAmount;
+    private Double creditLine;
 
 }
