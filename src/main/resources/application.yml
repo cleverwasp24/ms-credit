@@ -16,10 +16,7 @@ spring:
     name: ms-credit
 logging:
   level:
-    com:
-      nttdata:
-        bootcamp:
-          mscredit: info
+    '[com.nttdata.bootcamp.mscredit]': info
 server:
   port: '8083'
 eureka:
