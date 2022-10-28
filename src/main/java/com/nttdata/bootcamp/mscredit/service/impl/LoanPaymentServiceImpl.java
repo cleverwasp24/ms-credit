@@ -1,14 +1,9 @@
 package com.nttdata.bootcamp.mscredit.service.impl;
 
 import com.nttdata.bootcamp.mscredit.dto.LoanPaymentDTO;
-import com.nttdata.bootcamp.mscredit.dto.LoanPaymentDTO;
-import com.nttdata.bootcamp.mscredit.dto.TransactionDTO;
 import com.nttdata.bootcamp.mscredit.infrastructure.LoanPaymentRepository;
 import com.nttdata.bootcamp.mscredit.mapper.LoanPaymentDTOMapper;
-import com.nttdata.bootcamp.mscredit.model.CreditCard;
 import com.nttdata.bootcamp.mscredit.model.LoanPayment;
-import com.nttdata.bootcamp.mscredit.model.LoanPayment;
-import com.nttdata.bootcamp.mscredit.service.CreditCardService;
 import com.nttdata.bootcamp.mscredit.service.LoanPaymentService;
 import com.nttdata.bootcamp.mscredit.service.LoanService;
 import lombok.extern.log4j.Log4j2;

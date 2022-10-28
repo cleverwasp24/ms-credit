@@ -1,7 +1,6 @@
 package com.nttdata.bootcamp.mscredit.controller;
 
 import com.nttdata.bootcamp.mscredit.dto.LoanDTO;
-import com.nttdata.bootcamp.mscredit.model.CreditCard;
 import com.nttdata.bootcamp.mscredit.model.Loan;
 import com.nttdata.bootcamp.mscredit.service.impl.LoanServiceImpl;
 import lombok.extern.log4j.Log4j2;

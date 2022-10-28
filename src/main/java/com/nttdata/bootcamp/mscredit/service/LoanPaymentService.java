@@ -1,8 +1,6 @@
 package com.nttdata.bootcamp.mscredit.service;
 
 import com.nttdata.bootcamp.mscredit.dto.LoanPaymentDTO;
-import com.nttdata.bootcamp.mscredit.dto.TransactionDTO;
-import com.nttdata.bootcamp.mscredit.model.CreditCard;
 import com.nttdata.bootcamp.mscredit.model.LoanPayment;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

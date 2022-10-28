@@ -1,9 +1,7 @@
 package com.nttdata.bootcamp.mscredit.controller;
 
 import com.nttdata.bootcamp.mscredit.dto.LoanPaymentDTO;
-import com.nttdata.bootcamp.mscredit.mapper.LoanPaymentDTOMapper;
 import com.nttdata.bootcamp.mscredit.model.LoanPayment;
-import com.nttdata.bootcamp.mscredit.model.Transaction;
 import com.nttdata.bootcamp.mscredit.service.impl.LoanPaymentServiceImpl;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
