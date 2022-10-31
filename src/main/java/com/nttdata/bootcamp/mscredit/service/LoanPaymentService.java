@@ -11,15 +11,15 @@ public interface LoanPaymentService {
 
     Mono<LoanPayment> create(LoanPayment loanPayment);
 
-    Mono<LoanPayment> findById(Integer id);
+    Mono<LoanPayment> findById(Long id);
 
-    Mono<LoanPayment> update(Integer id, LoanPayment loanPayment);
+    Mono<LoanPayment> update(Long id, LoanPayment loanPayment);
 
-    Mono<Void> delete(Integer id);
+    Mono<Void> delete(Long id);
 
     Mono<String> createLoanPayment(LoanPaymentDTO loanPaymentDTO);
 
-    Flux<LoanPayment> findAllByLoanId(Integer id);
+    Flux<LoanPayment> findAllByLoanId(Long id);
 
     Mono<String> checkFields(LoanPaymentDTO loanPayment);
 

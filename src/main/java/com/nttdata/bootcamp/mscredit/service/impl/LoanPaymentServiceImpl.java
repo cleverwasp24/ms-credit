@@ -4,6 +4,7 @@ import com.nttdata.bootcamp.mscredit.dto.LoanPaymentDTO;
 import com.nttdata.bootcamp.mscredit.infrastructure.LoanPaymentRepository;
 import com.nttdata.bootcamp.mscredit.mapper.LoanPaymentDTOMapper;
 import com.nttdata.bootcamp.mscredit.model.LoanPayment;
+import com.nttdata.bootcamp.mscredit.service.DatabaseSequenceService;
 import com.nttdata.bootcamp.mscredit.service.LoanPaymentService;
 import com.nttdata.bootcamp.mscredit.service.LoanService;
 import lombok.extern.log4j.Log4j2;
@@ -22,6 +23,9 @@ public class LoanPaymentServiceImpl implements LoanPaymentService {
     @Autowired
     private LoanService loanService;
 
+    @Autowired
+    private DatabaseSequenceService databaseSequenceService;
+
     private LoanPaymentDTOMapper loanPaymentDTOMapper = new LoanPaymentDTOMapper();
 
     @Override
@@ -37,13 +41,13 @@ public class LoanPaymentServiceImpl implements LoanPaymentService {
     }
 
     @Override
-    public Mono<LoanPayment> findById(Integer id) {
+    public Mono<LoanPayment> findById(Long id) {
         log.info("Searching loan payment by id: " + id);
         return loanPaymentRepository.findById(id);
     }
 
     @Override
-    public Mono<LoanPayment> update(Integer id, LoanPayment loanPayment) {
+    public Mono<LoanPayment> update(Long id, LoanPayment loanPayment) {
         log.info("Updating loan payment with id: " + id + " with : " + loanPayment.toString());
         return loanPaymentRepository.findById(id)
                 .flatMap(l -> {
@@ -53,7 +57,7 @@ public class LoanPaymentServiceImpl implements LoanPaymentService {
     }
 
     @Override
-    public Mono<Void> delete(Integer id) {
+    public Mono<Void> delete(Long id) {
         log.info("Deleting loan payment with id: " + id);
         return loanPaymentRepository.deleteById(id);
     }
@@ -70,13 +74,17 @@ public class LoanPaymentServiceImpl implements LoanPaymentService {
                     }
                     loanPayment.setNewPendingDebt(cc.getPendingDebt());
                     return loanService.update(cc.getId(), cc)
-                            .then(loanPaymentRepository.save(loanPayment))
-                            .then(Mono.just("Loan payment done, new pending debt: " + cc.getPendingDebt()));
+                            .flatMap(l ->
+                                    databaseSequenceService.generateSequence(LoanPayment.SEQUENCE_NAME).flatMap(sequence -> {
+                                        loanPayment.setId(sequence);
+                                        return loanPaymentRepository.save(loanPayment)
+                                                .flatMap(lp -> Mono.just("Loan payment done, new pending debt: " + cc.getPendingDebt()));
+                                    }));
                 }).switchIfEmpty(Mono.error(new IllegalArgumentException("Loan not found"))));
     }
 
     @Override
-    public Flux<LoanPayment> findAllByLoanId(Integer id) {
+    public Flux<LoanPayment> findAllByLoanId(Long id) {
         log.info("Listing all loan payments by loan id");
         return loanPaymentRepository.findAllByLoanId(id);
     }
@@ -89,7 +97,6 @@ public class LoanPaymentServiceImpl implements LoanPaymentService {
         if (loanPayment.getAmount() == null || loanPayment.getAmount() <= 0) {
             return Mono.error(new IllegalArgumentException("Loan payment amount must be greater than 0"));
         }
-        return loanPaymentRepository.findById(loanPayment.getId())
-                .flatMap(cc -> Mono.error(new IllegalArgumentException("Loan payment id already exists")));
+        return Mono.empty();
     }
 }

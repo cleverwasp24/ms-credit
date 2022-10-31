@@ -5,9 +5,8 @@ import lombok.Data;
 @Data
 public class LoanDTO {
 
-    private Integer id;
     private String loanCode;
-    private Integer clientId;
+    private Long clientId;
     private Double totalDebt;
     private Integer installments;
 

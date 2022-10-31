@@ -39,7 +39,7 @@ public class LoanController {
 
     @GetMapping(value = "/find/{id}")
     @ResponseBody
-    public Mono<ResponseEntity<Loan>> findLoanById(@PathVariable Integer id) {
+    public Mono<ResponseEntity<Loan>> findLoanById(@PathVariable Long id) {
         return loanService.findById(id)
                 .map(loan -> ResponseEntity.ok().body(loan))
                 .onErrorResume(e -> {
@@ -51,7 +51,7 @@ public class LoanController {
 
     @PutMapping(value = "/update/{id}")
     @ResponseBody
-    public Mono<ResponseEntity<Loan>> updateLoan(@PathVariable Integer id, @RequestBody Loan loan) {
+    public Mono<ResponseEntity<Loan>> updateLoan(@PathVariable Long id, @RequestBody Loan loan) {
         return loanService.update(id, loan)
                 .map(a -> new ResponseEntity<>(a, HttpStatus.ACCEPTED))
                 .defaultIfEmpty(new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -59,14 +59,14 @@ public class LoanController {
 
     @DeleteMapping(value = "/delete/{id}")
     @ResponseBody
-    public Mono<Void> deleteByIdLoan(@PathVariable Integer id) {
+    public Mono<Void> deleteByIdLoan(@PathVariable Long id) {
         return loanService.delete(id)
                 .defaultIfEmpty(null);
     }
 
     @GetMapping(value = "/findAllByClientId/{id}")
     @ResponseBody
-    public Flux<Loan> findAllByClientId(@PathVariable Integer id) {
+    public Flux<Loan> findAllByClientId(@PathVariable Long id) {
         return loanService.findAllByClientId(id);
     }
 

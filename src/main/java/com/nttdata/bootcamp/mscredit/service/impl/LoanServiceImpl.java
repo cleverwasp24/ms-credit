@@ -6,6 +6,7 @@ import com.nttdata.bootcamp.mscredit.mapper.LoanDTOMapper;
 import com.nttdata.bootcamp.mscredit.model.Loan;
 import com.nttdata.bootcamp.mscredit.model.enums.ClientTypeEnum;
 import com.nttdata.bootcamp.mscredit.model.enums.LoanTypeEnum;
+import com.nttdata.bootcamp.mscredit.service.DatabaseSequenceService;
 import com.nttdata.bootcamp.mscredit.service.LoanService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,9 @@ public class LoanServiceImpl implements LoanService {
     @Autowired
     private ClientServiceImpl clientService;
 
+    @Autowired
+    private DatabaseSequenceService databaseSequenceService;
+
     private LoanDTOMapper loanDTOMapper = new LoanDTOMapper();
 
     @Override
@@ -38,13 +42,13 @@ public class LoanServiceImpl implements LoanService {
     }
 
     @Override
-    public Mono<Loan> findById(Integer id) {
+    public Mono<Loan> findById(Long id) {
         log.info("Searching loan by id: " + id);
         return loanRepository.findById(id);
     }
 
     @Override
-    public Mono<Loan> update(Integer id, Loan loan) {
+    public Mono<Loan> update(Long id, Loan loan) {
         log.info("Updating loan with id: " + id + " with : " + loan.toString());
         return loanRepository.findById(id)
                 .flatMap(l -> {
@@ -54,7 +58,7 @@ public class LoanServiceImpl implements LoanService {
     }
 
     @Override
-    public Mono<Void> delete(Integer id) {
+    public Mono<Void> delete(Long id) {
         log.info("Deleting loan with id: " + id);
         return loanRepository.deleteById(id);
     }
@@ -69,9 +73,11 @@ public class LoanServiceImpl implements LoanService {
                             switch (ClientTypeEnum.valueOf(c.getClientType())) {
                                 case PERSONAL:
                                     return findAllByClientId(c.getId()).count().flatMap(l -> (l < 1) ?
-                                            loanRepository.save(loan)
-                                                    .then(Mono.just("Loan created! "
-                                                            + loanDTOMapper.convertToDto(loan)))
+                                            databaseSequenceService.generateSequence(Loan.SEQUENCE_NAME).flatMap(sequence -> {
+                                                loan.setId(sequence);
+                                                return loanRepository.save(loan)
+                                                        .flatMap(lo -> Mono.just("Personal Loan created! " + loanDTOMapper.convertToDto(lo)));
+                                            })
                                             : Mono.error(new IllegalArgumentException("Personal clients can have only one personal loan")));
                                 case BUSINESS:
                                     return Mono.error(new IllegalArgumentException("Only personal clients can have a personal loan"));
@@ -93,9 +99,11 @@ public class LoanServiceImpl implements LoanService {
                                 case PERSONAL:
                                     return Mono.error(new IllegalArgumentException("Only business clients can have business loans"));
                                 case BUSINESS:
-                                    return loanRepository.save(loan)
-                                            .then(Mono.just("Loan created! "
-                                                    + loanDTOMapper.convertToDto(loan)));
+                                    return databaseSequenceService.generateSequence(Loan.SEQUENCE_NAME).flatMap(sequence -> {
+                                        loan.setId(sequence);
+                                        return loanRepository.save(loan)
+                                                .flatMap(lo -> Mono.just("Business Loan created! " + loanDTOMapper.convertToDto(lo)));
+                                    });
                                 default:
                                     return Mono.error(new IllegalArgumentException("Invalid client type"));
                             }
@@ -104,7 +112,7 @@ public class LoanServiceImpl implements LoanService {
     }
 
     @Override
-    public Flux<Loan> findAllByClientId(Integer id) {
+    public Flux<Loan> findAllByClientId(Long id) {
         log.info("Listing all loans by client id");
         return loanRepository.findAllByClientId(id);
     }
@@ -120,8 +128,7 @@ public class LoanServiceImpl implements LoanService {
         if (loan.getInstallments() == null || loan.getInstallments() <= 0) {
             return Mono.error(new IllegalArgumentException("Loan installments must be greater than 0"));
         }
-        return loanRepository.findById(loan.getId())
-                .flatMap(cc -> Mono.error(new IllegalArgumentException("Loan id already exists")));
+        return Mono.empty();
     }
 
 }
