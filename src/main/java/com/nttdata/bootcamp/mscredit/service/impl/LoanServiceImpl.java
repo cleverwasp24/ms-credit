@@ -6,6 +6,7 @@ import com.nttdata.bootcamp.mscredit.mapper.LoanDTOMapper;
 import com.nttdata.bootcamp.mscredit.model.Loan;
 import com.nttdata.bootcamp.mscredit.model.enums.ClientTypeEnum;
 import com.nttdata.bootcamp.mscredit.model.enums.LoanTypeEnum;
+import com.nttdata.bootcamp.mscredit.service.ClientService;
 import com.nttdata.bootcamp.mscredit.service.DatabaseSequenceService;
 import com.nttdata.bootcamp.mscredit.service.LoanService;
 import lombok.extern.log4j.Log4j2;
@@ -22,7 +23,7 @@ public class LoanServiceImpl implements LoanService {
     private LoanRepository loanRepository;
 
     @Autowired
-    private ClientServiceImpl clientService;
+    private ClientService clientService;
 
     @Autowired
     private DatabaseSequenceService databaseSequenceService;

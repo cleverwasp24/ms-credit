@@ -2,6 +2,7 @@ package com.nttdata.bootcamp.mscredit.controller;
 
 import com.nttdata.bootcamp.mscredit.dto.LoanDTO;
 import com.nttdata.bootcamp.mscredit.model.Loan;
+import com.nttdata.bootcamp.mscredit.service.LoanService;
 import com.nttdata.bootcamp.mscredit.service.impl.LoanServiceImpl;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,7 @@ import reactor.core.publisher.Mono;
 public class LoanController {
 
     @Autowired
-    LoanServiceImpl loanService;
+    LoanService loanService;
 
     @GetMapping(value = "/findAllLoans")
     @ResponseBody
